@@ -28,14 +28,17 @@ function it(name, testFn) {
 
 async function runAsyncTests() {
   // Test 1: Check commands loaded
-  it('Loads the core commands: viewonce, antidelet, bot, menu, movie, anime', () => {
-    assert.strictEqual(commandHandler.commands.size, 6, 'Expected 6 commands loaded');
+  it('Loads the core commands: viewonce, antidelet, bot, menu, movie, anime, series, mute, unmute', () => {
+    assert.strictEqual(commandHandler.commands.size, 9, 'Expected 9 commands loaded');
     assert.ok(commandHandler.commands.has('viewonce'), 'Missing viewonce command');
     assert.ok(commandHandler.commands.has('antidelet'), 'Missing antidelet command');
     assert.ok(commandHandler.commands.has('bot'), 'Missing bot command');
     assert.ok(commandHandler.commands.has('menu'), 'Missing menu command');
     assert.ok(commandHandler.commands.has('movie'), 'Missing movie command');
     assert.ok(commandHandler.commands.has('anime'), 'Missing anime command');
+    assert.ok(commandHandler.commands.has('series'), 'Missing series command');
+    assert.ok(commandHandler.commands.has('mute'), 'Missing mute command');
+    assert.ok(commandHandler.commands.has('unmute'), 'Missing unmute command');
   });
 
   // Test 2: Check aliases resolution
@@ -54,6 +57,10 @@ async function runAsyncTests() {
     assert.strictEqual(commandHandler.getCommand('cinema')?.name, 'movie');
     assert.strictEqual(commandHandler.getCommand('ani')?.name, 'anime');
     assert.strictEqual(commandHandler.getCommand('watchanime')?.name, 'anime');
+    assert.strictEqual(commandHandler.getCommand('tv')?.name, 'series');
+    assert.strictEqual(commandHandler.getCommand('kdrama')?.name, 'series');
+    assert.strictEqual(commandHandler.getCommand('closegroup')?.name, 'mute');
+    assert.strictEqual(commandHandler.getCommand('opengroup')?.name, 'unmute');
   });
 
   // Test 3: Prefix parsing & standalone keywords
@@ -432,6 +439,110 @@ async function runAsyncTests() {
     assert.ok(responseText.toUpperCase().includes('SOLO LEVELING'), 'Response should mention Solo Leveling');
     assert.ok(responseText.includes('EPISODE 2'), 'Response should indicate selected Episode 2');
     assert.ok(responseText.includes('anikoto.cz/watch/'), 'Response should contain AniKoto watch URL');
+  });
+
+  // Test 13: Series Search and Season/Episode parsing (Hollywood / Bollywood / K-Drama)
+  it('Searches TV series and generates Season/Episode streaming links with Dual Audio', async () => {
+    const seriesCmd = commandHandler.getCommand('series');
+    assert.ok(seriesCmd, 'Missing series command');
+
+    let sentPayload = null;
+    const mockSock = {
+      sendMessage: async (jid, content) => {
+        sentPayload = content;
+        return { key: { id: 'RESP_SERIES' } };
+      }
+    };
+
+    const mockMsg = {
+      key: { remoteJid: '923056499820@s.whatsapp.net', fromMe: true },
+      message: { conversation: '.series squid game 2 1' }
+    };
+
+    await seriesCmd.execute({
+      sock: mockSock,
+      msg: mockMsg,
+      from: '923056499820@s.whatsapp.net',
+      sender: '923056499820@s.whatsapp.net',
+      args: ['squid', 'game', '2', '1']
+    });
+
+    assert.ok(sentPayload !== null, 'Should send response for series search');
+    const responseText = sentPayload.text || sentPayload.caption || '';
+    assert.ok(responseText.toUpperCase().includes('SQUID GAME'), 'Response should mention Squid Game');
+    assert.ok(responseText.includes('Season 2, Episode 1'), 'Response should show Season 2, Episode 1');
+    assert.ok(responseText.includes('vidsrc.to/embed/tv/'), 'Response should contain vidsrc TV streaming link');
+    assert.ok(responseText.includes('Hindi Dubbed'), 'Response should mention Dual Audio / Hindi Dubbed');
+    assert.ok(responseText.includes('vegamovies.im'), 'Response should link to Hindi Dubbed series portal');
+  });
+
+  // Test 14: Group Admin Mute and Unmute commands
+  it('Enforces group admin permissions and updates group settings for .mute and .unmute', async () => {
+    const muteCmd = commandHandler.getCommand('mute');
+    const unmuteCmd = commandHandler.getCommand('unmute');
+    assert.ok(muteCmd && unmuteCmd, 'Missing mute or unmute command');
+
+    let settingUpdated = null;
+    let sentPayload = null;
+
+    const mockSock = {
+      user: { id: '923999999999:1@s.whatsapp.net' }, // Bot account
+      groupMetadata: async (gid) => ({
+        id: gid,
+        participants: [
+          { id: '923999999999@s.whatsapp.net', admin: 'admin' }, // Bot is admin
+          { id: '923001112233@s.whatsapp.net', admin: 'admin' }, // Group Admin
+          { id: '923004445566@s.whatsapp.net', admin: null },    // Regular member
+        ]
+      }),
+      groupSettingUpdate: async (gid, setting) => {
+        settingUpdated = setting;
+      },
+      sendMessage: async (jid, content) => {
+        sentPayload = content;
+        return { key: { id: 'RESP_GRP' } };
+      }
+    };
+
+    // 1. Regular member tries to mute -> denied
+    sentPayload = null;
+    await muteCmd.execute({
+      sock: mockSock,
+      msg: { key: {} },
+      from: '120363999@g.us',
+      sender: '923004445566@s.whatsapp.net',
+      isGroup: true,
+      isOwner: false
+    });
+    assert.ok(sentPayload?.text?.includes('Permission Denied'), 'Non-admin member must be denied');
+
+    // 2. Group Admin mutes -> succeeds
+    sentPayload = null;
+    settingUpdated = null;
+    await muteCmd.execute({
+      sock: mockSock,
+      msg: { key: {} },
+      from: '120363999@g.us',
+      sender: '923001112233@s.whatsapp.net',
+      isGroup: true,
+      isOwner: false
+    });
+    assert.strictEqual(settingUpdated, 'announcement', 'Mute must set group to announcement mode');
+    assert.ok(sentPayload?.text?.includes('GROUP MUTED'), 'Confirmation must be sent');
+
+    // 3. Bot Owner unmutes -> succeeds
+    sentPayload = null;
+    settingUpdated = null;
+    await unmuteCmd.execute({
+      sock: mockSock,
+      msg: { key: {} },
+      from: '120363999@g.us',
+      sender: '923056499820@s.whatsapp.net',
+      isGroup: true,
+      isOwner: true
+    });
+    assert.strictEqual(settingUpdated, 'not_announcement', 'Unmute must set group to not_announcement mode');
+    assert.ok(sentPayload?.text?.includes('GROUP UNMUTED'), 'Confirmation must be sent');
   });
 
   console.log(`\n=========================================`);

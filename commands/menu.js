@@ -26,13 +26,22 @@ Status: ${botStatus} | Anti-Delete: ${antiDelStatus}
 
 🎬 *CINEMA & MOVIES (DUAL AUDIO)*
 • \`${p}movie <name>\`
-  Instant streaming player with Full Controls (Play/Pause/Seek) & Dual Audio (Hindi Dubbed + English).
-  _Example:_ \`${p}movie titanic\`
+  Hollywood & Bollywood movies with Dual Audio (Hindi/English) & Full Controls.
+  _Example:_ \`${p}movie pushpa 2\` or \`${p}movie titanic\`
+
+📺 *SERIES & K-DRAMA (HOLLYWOOD / BOLLYWOOD)*
+• \`${p}series <name> [season] [episode]\`
+  Hollywood, Bollywood web series, K-Dramas & Pakistani/Turkish shows.
+  _Example:_ \`${p}series squid game 2 1\` or \`${p}series mirzapur 3\`
 
 🍙 *ANIME STREAMING (SUB & DUB)*
 • \`${p}anime <name> [episode]\`
-  Search anime from AniKoto & Anichi with Episode Select, English Sub, and English Dub.
+  Universal anime search with Episode Select, English Sub & Dub.
   _Example:_ \`${p}anime solo leveling 2\`
+
+👥 *GROUP MANAGEMENT (ADMIN ONLY)*
+• \`${p}mute\` — Mute group so only admins can send messages
+• \`${p}unmute\` — Unmute group so all participants can send messages
 
 🔓 *VIEW-ONCE DOWNLOADER*
 • \`${p}viewonce\` (or \`${p}vv\`)
@@ -54,6 +63,6 @@ Status: ${botStatus} | Anti-Delete: ${antiDelStatus}
 `.trim();
 
     const output = miniBox('BOT MENU', body, config.botName || 'MINI BOT');
-    await safety.safeSend(sock, from, { text: output }, { quoted: msg });
+    await safety.safeSend(sock, from, { text: output });
   }
 };
