@@ -31,6 +31,12 @@ function deepUnwrap(msgObj) {
     } else if (m?.documentWithCaptionMessage?.message) {
       m = m.documentWithCaptionMessage.message;
       changed = true;
+    } else if (m?.deviceSentMessage?.message) {
+      m = m.deviceSentMessage.message;
+      changed = true;
+    } else if (m?.botInvokeMessage?.message) {
+      m = m.botInvokeMessage.message;
+      changed = true;
     } else if (m?.protocolMessage?.editedMessage) {
       m = m.protocolMessage.editedMessage;
       changed = true;

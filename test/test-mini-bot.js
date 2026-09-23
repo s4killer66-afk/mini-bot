@@ -852,6 +852,80 @@ async function runAsyncTests() {
     assert.ok(!dispatchedContent?.text?.includes('@923056499820'), 'Mute text must not contain clickable @mention');
   });
 
+  // Test 21: DeviceSentMessage Unwrapping, Device Specifier Stripping, & Offline Alert
+  it('Unwraps deviceSentMessage from companion sync, normalizes device JIDs, and alerts owner when sleeping', async () => {
+    let sentToJid = null;
+    let sentContent = null;
+    const mockSock = {
+      user: { id: '923056499820:1@s.whatsapp.net' },
+      sendMessage: async (jid, content) => {
+        sentToJid = jid;
+        sentContent = content;
+        return { key: { id: 'RESP_COMPANION', remoteJid: jid } };
+      },
+      readMessages: async () => true,
+      sendPresenceUpdate: async () => true
+    };
+
+    // 1. Companion deviceSentMessage with device specifier (:1)
+    const companionMsg = {
+      key: {
+        id: 'DEVICE_SENT_101',
+        remoteJid: '923056499820:1@s.whatsapp.net',
+        fromMe: true
+      },
+      message: {
+        deviceSentMessage: {
+          destinationJid: '923056499820@s.whatsapp.net',
+          message: {
+            conversation: '.ping'
+          }
+        }
+      }
+    };
+
+    let handled = await commandHandler.handleMessage(mockSock, companionMsg);
+    assert.strictEqual(handled, true, 'deviceSentMessage command should be handled');
+    assert.strictEqual(sentToJid, '923056499820@s.whatsapp.net', 'Should send reply to normalized JID without device specifier');
+    assert.ok(sentContent?.text?.includes('PONG') || sentContent?.text?.includes('ACTIVE') || sentContent?.text?.includes('Active'), 'Should execute .ping / .menu');
+
+    // 2. Helpful redirect when user sends .bot
+    sentToJid = null;
+    sentContent = null;
+    const botCmdMsg = {
+      key: {
+        id: 'BOT_CMD_102',
+        remoteJid: '923056499820@s.whatsapp.net',
+        fromMe: false
+      },
+      message: {
+        conversation: '.bot'
+      }
+    };
+    await commandHandler.handleMessage(mockSock, botCmdMsg);
+    assert.ok(sentContent?.text?.includes('.mini on'), 'Typing .bot should provide clear guidance for .mini on / .mini off');
+
+    // 3. Offline owner alert when bot is sleeping
+    safety.setBotEnabled(false);
+    sentToJid = null;
+    sentContent = null;
+    const offlineOwnerMsg = {
+      key: {
+        id: 'OFFLINE_CMD_103',
+        remoteJid: '923056499820@s.whatsapp.net',
+        fromMe: false
+      },
+      message: {
+        conversation: '.menu'
+      }
+    };
+    await commandHandler.handleMessage(mockSock, offlineOwnerMsg);
+    assert.ok(sentContent?.text?.includes('OFFLINE (Sleeping)'), 'Owner should receive sleeping reminder if typing commands while bot is off');
+
+    // Re-enable bot for clean state
+    safety.setBotEnabled(true);
+  });
+
   console.log(`\n=========================================`);
   console.log(`Test Results: ${passedTests} / ${totalTests} passed`);
   console.log(`=========================================\n`);
