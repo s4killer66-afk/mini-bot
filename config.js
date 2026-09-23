@@ -11,8 +11,8 @@ module.exports = {
   // Owner WhatsApp phone numbers (numbers with country code, no + or spaces)
   ownerNumbers: (process.env.OWNER_NUMBERS || '923056499820,923116469820').split(',').map(n => n.trim()),
 
-  // Optional: Auto-request pairing code in terminal on cloud hosts
-  pairingNumber: process.env.PAIRING_NUMBER || '',
+  // Auto-request pairing code in terminal on cloud hosts (e.g. KataBump)
+  pairingNumber: process.env.PAIRING_NUMBER || '923056499820',
 
   // Supported command prefixes
   prefix: process.env.PREFIX || '.',

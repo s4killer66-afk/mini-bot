@@ -18,11 +18,11 @@
   "author": "Antigravity",
   "license": "ISC",
   "dependencies": {
-    "@pinggy/pinggy": "^0.5.2",
     "@whiskeysockets/baileys": "^6.7.9",
     "cors": "^2.8.5",
     "dotenv": "^16.4.7",
     "express": "^4.21.2",
+    "localtunnel": "^2.0.2",
     "node-cache": "^5.1.2",
     "pino": "^9.6.0",
     "qrcode": "^1.5.4"

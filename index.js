@@ -82,18 +82,33 @@ const server = app.listen(config.port, async () => {
 
   // Auto-generate public web pairing URL so user can link via any browser
   try {
-    const { pinggy } = require('@pinggy/pinggy');
-    const tunnel = await pinggy.forward({ forwarding: `localhost:${config.port}` });
-    const publicUrls = await tunnel.urls();
-    if (publicUrls && publicUrls.length > 0) {
-      console.log(`------------------------------------------------------`);
-      console.log(`🌍 PUBLIC PAIRING WEBPAGE:`);
-      console.log(`👉 ${publicUrls[0]}`);
-      console.log(`Open this link in your browser to link WhatsApp instantly!`);
-      console.log(`------------------------------------------------------`);
+    const localtunnel = require('localtunnel');
+    const tunnel = await localtunnel({ port: config.port });
+
+    // Fetch server external IP for localtunnel friendly verification
+    let ipPassword = '';
+    try {
+      const ipRes = await fetch('https://api.ipify.org', { signal: AbortSignal.timeout(3000) });
+      if (ipRes.ok) ipPassword = (await ipRes.text()).trim();
+    } catch (e) {}
+
+    console.log(`------------------------------------------------------`);
+    console.log(`🌍 PUBLIC PAIRING WEBPAGE:`);
+    console.log(`👉 ${tunnel.url}`);
+    if (ipPassword) {
+      console.log(`🔑 Webpage Password (if prompted): ${ipPassword}`);
     }
+    console.log(`Open this link in your browser to link WhatsApp instantly!`);
+    console.log(`------------------------------------------------------`);
+
+    tunnel.on('close', () => {
+      console.log('[Tunnel] Public pairing webpage closed.');
+    });
+    tunnel.on('error', (err) => {
+      console.log('[Tunnel Info]:', err.message);
+    });
   } catch (tunnelErr) {
-    // Tunnel is non-blocking fallback
+    console.log('[Tunnel Info]:', tunnelErr.message);
   }
 
   console.log(`======================================================\n`);
