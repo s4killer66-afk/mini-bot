@@ -24,6 +24,16 @@ Status: ${botStatus} | Anti-Delete: ${antiDelStatus}
 
 📋 *AVAILABLE COMMANDS:*
 
+🎬 *CINEMA & MOVIES (DUAL AUDIO)*
+• \`${p}movie <name>\`
+  Instant streaming player with Full Controls (Play/Pause/Seek) & Dual Audio (Hindi Dubbed + English).
+  _Example:_ \`${p}movie titanic\`
+
+🍙 *ANIME STREAMING (SUB & DUB)*
+• \`${p}anime <name> [episode]\`
+  Search anime from AniKoto & Anichi with Episode Select, English Sub, and English Dub.
+  _Example:_ \`${p}anime solo leveling 2\`
+
 🔓 *VIEW-ONCE DOWNLOADER*
 • \`${p}viewonce\` (or \`${p}vv\`)
   Reply to any View-Once photo, video, or voice note to unlock it silently.

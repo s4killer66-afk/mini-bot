@@ -22,6 +22,18 @@ A lightweight, high-performance WhatsApp bot powered by [@whiskeysockets/baileys
   - Commands: `.bot on`, `.bot off`, `.bot` (status).
   - Aliases: `.switch`, `.power`
 
+- 🎬 **Cinema & Movies (`.movie`)**:
+  - Search any movie and get instant streaming player links with full controls (play, pause, seek, fullscreen).
+  - Multi-audio support: includes **Dual Audio (Hindi Dubbed + English)**.
+  - Zero server lag: generates instant lightweight embed links without storing 2GB files on server.
+  - Aliases: `.film`, `.movies`, `.cinema`
+
+- 🍙 **Anime Streaming (`.anime`)**:
+  - Direct search across AniKoto & Anichi with episode selection.
+  - Shows English Sub & English Dub availability and episode count.
+  - Quick episode switcher (e.g. `.anime solo leveling 3`).
+  - Aliases: `.ani`, `.animelist`, `.watchanime`
+
 - 🔗 **Web Pairing Dashboard**:
   - Built-in web dashboard at `http://localhost:8080`.
   - Enter your phone number and get an instant 8-character WhatsApp pairing code (`XXXX-XXXX`) without needing to scan QR codes.
@@ -65,9 +77,12 @@ npm start
 
 | Command | Aliases | Description | Permission |
 | :--- | :--- | :--- | :--- |
+| `.movie <name>` | `.film`, `.movies`, `.cinema` | Stream movies with Dual Audio (Hindi/English) & full controls | All Users |
+| `.anime <name> [ep]` | `.ani`, `.animelist`, `.watchanime` | Stream anime episodes with Sub/Dub & player controls | All Users |
 | `.viewonce` | `.vv`, `.videwonce`, `.rvo` | Reply to any View-Once photo, video, or audio to download | All Users / Silent DM |
 | `.antidelet` | `.antidelete`, `.antidel` | Toggle deleted message recovery (`on` / `off`) | All Users |
 | `.bot` | `.switch`, `.power` | Master bot switch (`on` / `off` / status) | Owner Only |
+| `.menu` | `.help`, `.ping`, `.alive` | Show bot status and list of commands | All Users |
 
 ---
 

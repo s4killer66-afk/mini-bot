@@ -28,12 +28,14 @@ function it(name, testFn) {
 
 async function runAsyncTests() {
   // Test 1: Check commands loaded
-  it('Loads the core commands: viewonce, antidelet, bot, menu', () => {
-    assert.strictEqual(commandHandler.commands.size, 4, 'Expected 4 commands loaded');
+  it('Loads the core commands: viewonce, antidelet, bot, menu, movie, anime', () => {
+    assert.strictEqual(commandHandler.commands.size, 6, 'Expected 6 commands loaded');
     assert.ok(commandHandler.commands.has('viewonce'), 'Missing viewonce command');
     assert.ok(commandHandler.commands.has('antidelet'), 'Missing antidelet command');
     assert.ok(commandHandler.commands.has('bot'), 'Missing bot command');
     assert.ok(commandHandler.commands.has('menu'), 'Missing menu command');
+    assert.ok(commandHandler.commands.has('movie'), 'Missing movie command');
+    assert.ok(commandHandler.commands.has('anime'), 'Missing anime command');
   });
 
   // Test 2: Check aliases resolution
@@ -48,6 +50,10 @@ async function runAsyncTests() {
     assert.strictEqual(commandHandler.getCommand('power')?.name, 'bot');
     assert.strictEqual(commandHandler.getCommand('help')?.name, 'menu');
     assert.strictEqual(commandHandler.getCommand('ping')?.name, 'menu');
+    assert.strictEqual(commandHandler.getCommand('film')?.name, 'movie');
+    assert.strictEqual(commandHandler.getCommand('cinema')?.name, 'movie');
+    assert.strictEqual(commandHandler.getCommand('ani')?.name, 'anime');
+    assert.strictEqual(commandHandler.getCommand('watchanime')?.name, 'anime');
   });
 
   // Test 3: Prefix parsing & standalone keywords
@@ -358,6 +364,73 @@ async function runAsyncTests() {
     assert.strictEqual(sentTarget, ownerJid, 'Must deliver recovered message to owner inbox');
     assert.ok(sentPayload?.text?.includes('Testing anti-delete in self chat'), 'Recovered text must match');
     assert.ok(sentPayload?.text?.includes('Self Chat'), 'Source should be Self Chat');
+  });
+
+  // Test 11: Movie Search and Dual Audio streaming link generation
+  it('Searches movie metadata and generates Dual Audio streaming player links', async () => {
+    const movieCmd = commandHandler.getCommand('movie');
+    assert.ok(movieCmd, 'Missing movie command');
+
+    let sentPayload = null;
+    const mockSock = {
+      sendMessage: async (jid, content) => {
+        sentPayload = content;
+        return { key: { id: 'RESP_MOVIE' } };
+      }
+    };
+
+    const mockMsg = {
+      key: { remoteJid: '923056499820@s.whatsapp.net', fromMe: true },
+      message: { conversation: '.movie titanic' }
+    };
+
+    await movieCmd.execute({
+      sock: mockSock,
+      msg: mockMsg,
+      from: '923056499820@s.whatsapp.net',
+      sender: '923056499820@s.whatsapp.net',
+      args: ['titanic']
+    });
+
+    assert.ok(sentPayload !== null, 'Should send response for movie search');
+    const responseText = sentPayload.caption || sentPayload.text || '';
+    assert.ok(responseText.toUpperCase().includes('TITANIC'), 'Response should mention Titanic');
+    assert.ok(responseText.includes('multiembed.mov/?video_id='), 'Response should contain multiembed streaming link');
+    assert.ok(responseText.includes('Hindi Dubbed'), 'Response should mention Dual Audio / Hindi Dubbed');
+    assert.ok(responseText.includes('net77.cc'), 'Response should mention Net77 mirror');
+  });
+
+  // Test 12: Anime Search and Episode extraction
+  it('Searches anime on AniKoto and generates Episode streaming player links with Sub/Dub', async () => {
+    const animeCmd = commandHandler.getCommand('anime');
+    assert.ok(animeCmd, 'Missing anime command');
+
+    let sentPayload = null;
+    const mockSock = {
+      sendMessage: async (jid, content) => {
+        sentPayload = content;
+        return { key: { id: 'RESP_ANIME' } };
+      }
+    };
+
+    const mockMsg = {
+      key: { remoteJid: '923056499820@s.whatsapp.net', fromMe: true },
+      message: { conversation: '.anime solo leveling 2' }
+    };
+
+    await animeCmd.execute({
+      sock: mockSock,
+      msg: mockMsg,
+      from: '923056499820@s.whatsapp.net',
+      sender: '923056499820@s.whatsapp.net',
+      args: ['solo', 'leveling', '2']
+    });
+
+    assert.ok(sentPayload !== null, 'Should send response for anime search');
+    const responseText = sentPayload.caption || sentPayload.text || '';
+    assert.ok(responseText.toUpperCase().includes('SOLO LEVELING'), 'Response should mention Solo Leveling');
+    assert.ok(responseText.includes('EPISODE 2'), 'Response should indicate selected Episode 2');
+    assert.ok(responseText.includes('anikoto.cz/watch/'), 'Response should contain AniKoto watch URL');
   });
 
   console.log(`\n=========================================`);
