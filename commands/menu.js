@@ -24,15 +24,25 @@ Status: ${botStatus} | Anti-Delete: ${antiDelStatus}
 
 📋 *AVAILABLE COMMANDS:*
 
-🎬 *CINEMA & MOVIES (DUAL AUDIO)*
+🎬 *CINEMA & MOVIES (DUAL AUDIO & HINDI)*
 • \`${p}movie <name>\`
   Hollywood & Bollywood movies with Dual Audio (Hindi/English) & Full Controls.
   _Example:_ \`${p}movie pushpa 2\` or \`${p}movie titanic\`
 
-📺 *SERIES & K-DRAMA (HOLLYWOOD / BOLLYWOOD)*
+🇰🇷 *KOREAN MOVIES (ENG SUBS & DUAL AUDIO)*
+• \`${p}kmovie <name>\` (or \`${p}kmovies\`)
+  Dedicated Korean Cinema with English Subtitles, English Dub & HD streaming.
+  _Example:_ \`${p}kmovie parasite\` or \`${p}kmovie train to busan\`
+
+📺 *WEB SERIES (HOLLYWOOD & BOLLYWOOD)*
 • \`${p}series <name> [season] [episode]\`
-  Hollywood, Bollywood web series, K-Dramas & Pakistani/Turkish shows.
-  _Example:_ \`${p}series squid game 2 1\` or \`${p}series mirzapur 3\`
+  Hollywood, Bollywood web series with Dual Audio & season/episode streaming.
+  _Example:_ \`${p}series mirzapur 3\` or \`${p}series stranger things 4 1\`
+
+🇰🇷 *K-DRAMAS & KOREAN SERIES (ENG SUBS & DUB)*
+• \`${p}kseries <name> [season] [episode]\` (or \`${p}kdrama\`)
+  Korean Dramas & Series with Episode Select, English Subtitles & Dual Language.
+  _Example:_ \`${p}kseries squid game 2 1\` or \`${p}kdrama queen of tears\`
 
 🍙 *ANIME STREAMING (SUB & DUB)*
 • \`${p}anime <name> [episode]\`
@@ -52,11 +62,11 @@ Status: ${botStatus} | Anti-Delete: ${antiDelStatus}
 • \`${p}antidelet off\` — Disable message recovery
 • \`${p}antidelet\` — Check status
 
-🤖 *BOT MASTER POWER SWITCH*
-• \`${p}bot on\` — Bring bot online
-• \`${p}bot off\` — Put bot to sleep
-• \`${p}bot\` — Check power status
-  _(Owner only)_
+🤖 *BOT MASTER POWER SWITCH (OWNER ONLY)*
+• \`${p}mini on\` — Bring bot online
+• \`${p}mini off\` — Put bot to sleep
+• \`${p}mini mode [public/groups/self]\` — Set who can use commands
+• \`${p}mini\` — Check power status & diagnostics
 
 ℹ️ *UTILITIES*
 • \`${p}menu\` / \`${p}ping\` — Show this menu

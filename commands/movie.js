@@ -109,13 +109,16 @@ module.exports = {
 👉 ${trailerUrl}
 ` : '';
 
-      // Multi-Language Streaming Servers (with Hindi Audio)
-      const multiLangPlayer1 = `https://autoembed.co/movie/tmdb/${tmdbId}`;
-      const multiLangPlayer2 = `https://multiembed.mov/?video_id=${tmdbId}&tmdb=1`;
-      const hdStreamPlayer = `https://vidsrc.to/embed/movie/${tmdbId}`;
+      // Multi-Language Streaming Servers (with Hindi Audio & English Subtitles)
+      const server1 = `https://embed.su/embed/movie/${tmdbId}`;
+      const server2 = `https://autoembed.co/movie/tmdb/${tmdbId}`;
+      const server3 = `https://multiembed.mov/?video_id=${tmdbId}&tmdb=1`;
+      const server4 = `https://vidsrc.cc/v2/embed/movie/${tmdbId}`;
 
-      // Hindi Dubbed Direct Streaming & Search Mirrors
-      const hindiGoogleSearch = `https://www.google.com/search?q=${encodeURIComponent(movieTitle + ' hindi dubbed watch online full movie free')}`;
+      // Working Hindi Dubbed Streaming Portals & Search Mirrors
+      const hindiSearch = `https://www.google.com/search?q=${encodeURIComponent(movieTitle + ' hindi dubbed full movie watch online free')}`;
+      const hindiLinksPortal = `https://hindilinks4u.to/?s=${encodeURIComponent(movieTitle)}`;
+      const bollyFlixPortal = `https://bollyflix.in/?s=${encodeURIComponent(movieTitle)}`;
       const vegaPortal = `https://vegamovies.im/?s=${encodeURIComponent(movieTitle)}`;
 
       const body = `
@@ -128,24 +131,33 @@ ${overview}
 ${whatsappPlayerSection}
 ==============================
 🌐 *MULTI-LANGUAGE PLAYERS (HINDI DUBBED):*
-• Player 1 (AutoEmbed - Multi-Audio):
-👉 ${multiLangPlayer1}
+• Server 1 (Embed.su - HD & Subtitles):
+👉 ${server1}
 
-• Player 2 (MultiEmbed - Hindi Server):
-👉 ${multiLangPlayer2}
+• Server 2 (AutoEmbed - Multi-Audio):
+👉 ${server2}
 
-• Player 3 (HD Fast Stream):
-👉 ${hdStreamPlayer}
+• Server 3 (MultiEmbed - Hindi Server):
+👉 ${server3}
+
+• Server 4 (VidSrc CC - Fast Stream):
+👉 ${server4}
 
 🎙️ *HINDI DUBBED STREAMING PORTALS:*
-• Direct Stream Search (All Working Links):
-👉 ${hindiGoogleSearch}
+• Direct Working Stream Search:
+👉 ${hindiSearch}
 
-• VegaMovies Catalog:
+• HindiLinks4U Stream:
+👉 ${hindiLinksPortal}
+
+• BollyFlix Catalog:
+👉 ${bollyFlixPortal}
+
+• VegaMovies Mirror:
 👉 ${vegaPortal}
 ==============================
 
-💡 *Tip:* Open Player 1 or Player 2 and switch audio track to Hindi Dubbed! If an ISP blocks a site, use the Direct Stream Search link to open unblocked streams.
+💡 *Tip:* Open Server 1, 2, or 3 and switch audio to Hindi Dubbed! If your network blocks a site, use the Direct Working Stream link.
 `.trim();
 
       const output = miniBox('MOVIE STREAMING', body, 'MINI BOT CINEMA');

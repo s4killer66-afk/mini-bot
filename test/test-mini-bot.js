@@ -28,17 +28,19 @@ function it(name, testFn) {
 
 async function runAsyncTests() {
   // Test 1: Check commands loaded
-  it('Loads the core commands: viewonce, antidelet, bot, menu, movie, anime, series, mute, unmute', () => {
-    assert.strictEqual(commandHandler.commands.size, 9, 'Expected 9 commands loaded');
+  it('Loads the core commands: viewonce, antidelet, mini, menu, movie, anime, series, mute, unmute, kmovie, kseries', () => {
+    assert.strictEqual(commandHandler.commands.size, 11, 'Expected 11 commands loaded');
     assert.ok(commandHandler.commands.has('viewonce'), 'Missing viewonce command');
     assert.ok(commandHandler.commands.has('antidelet'), 'Missing antidelet command');
-    assert.ok(commandHandler.commands.has('bot'), 'Missing bot command');
+    assert.ok(commandHandler.commands.has('mini'), 'Missing mini command');
     assert.ok(commandHandler.commands.has('menu'), 'Missing menu command');
     assert.ok(commandHandler.commands.has('movie'), 'Missing movie command');
     assert.ok(commandHandler.commands.has('anime'), 'Missing anime command');
     assert.ok(commandHandler.commands.has('series'), 'Missing series command');
     assert.ok(commandHandler.commands.has('mute'), 'Missing mute command');
     assert.ok(commandHandler.commands.has('unmute'), 'Missing unmute command');
+    assert.ok(commandHandler.commands.has('kmovie'), 'Missing kmovie command');
+    assert.ok(commandHandler.commands.has('kseries'), 'Missing kseries command');
   });
 
   // Test 2: Check aliases resolution
@@ -49,8 +51,9 @@ async function runAsyncTests() {
     assert.strictEqual(commandHandler.getCommand('antidelete')?.name, 'antidelet');
     assert.strictEqual(commandHandler.getCommand('antidel')?.name, 'antidelet');
     assert.strictEqual(commandHandler.getCommand('antirevoke')?.name, 'antidelet');
-    assert.strictEqual(commandHandler.getCommand('switch')?.name, 'bot');
-    assert.strictEqual(commandHandler.getCommand('power')?.name, 'bot');
+    assert.strictEqual(commandHandler.getCommand('minibot')?.name, 'mini');
+    assert.strictEqual(commandHandler.getCommand('switch')?.name, 'mini');
+    assert.strictEqual(commandHandler.getCommand('power')?.name, 'mini');
     assert.strictEqual(commandHandler.getCommand('help')?.name, 'menu');
     assert.strictEqual(commandHandler.getCommand('ping')?.name, 'menu');
     assert.strictEqual(commandHandler.getCommand('film')?.name, 'movie');
@@ -58,7 +61,10 @@ async function runAsyncTests() {
     assert.strictEqual(commandHandler.getCommand('ani')?.name, 'anime');
     assert.strictEqual(commandHandler.getCommand('watchanime')?.name, 'anime');
     assert.strictEqual(commandHandler.getCommand('tv')?.name, 'series');
-    assert.strictEqual(commandHandler.getCommand('kdrama')?.name, 'series');
+    assert.strictEqual(commandHandler.getCommand('kdrama')?.name, 'kseries');
+    assert.strictEqual(commandHandler.getCommand('kmovies')?.name, 'kmovie');
+    assert.strictEqual(commandHandler.getCommand('koreanmovie')?.name, 'kmovie');
+    assert.strictEqual(commandHandler.getCommand('koreanseries')?.name, 'kseries');
     assert.strictEqual(commandHandler.getCommand('closegroup')?.name, 'mute');
     assert.strictEqual(commandHandler.getCommand('opengroup')?.name, 'unmute');
   });
@@ -67,24 +73,37 @@ async function runAsyncTests() {
   it('Detects prefixes and standalone menu keywords', () => {
     assert.strictEqual(commandHandler.getPrefix('.viewonce'), '.');
     assert.strictEqual(commandHandler.getPrefix('!antidelet'), '!');
-    assert.strictEqual(commandHandler.getPrefix('#bot'), '#');
+    assert.strictEqual(commandHandler.getPrefix('#mini'), '#');
     assert.strictEqual(commandHandler.getPrefix('/vv'), '/');
     assert.strictEqual(commandHandler.getPrefix('hello world'), null);
   });
 
-  // Test 4: Bot power switch functionality
-  it('Manages Bot Master Power Switch (bot on/off)', async () => {
+  // Test 4: Bot power switch functionality (.mini on / .mini off)
+  it('Manages Bot Master Power Switch (.mini on/off) and rejects old .bot command', async () => {
     safety.setBotEnabled(true);
     assert.strictEqual(safety.isBotEnabled(), true);
 
-    // Turn off
-    safety.setBotEnabled(false);
-    assert.strictEqual(safety.isBotEnabled(), false);
-
-    // While offline, commands from non-owners should be ignored
     const mockSock = {
       sendMessage: async (jid, content) => content
     };
+
+    // Old .bot off command should be completely ignored and NOT turn off the bot
+    const oldBotOffMsg = {
+      key: { remoteJid: '923116469820@s.whatsapp.net', fromMe: false },
+      message: { conversation: '.bot off' }
+    };
+    await commandHandler.handleMessage(mockSock, oldBotOffMsg);
+    assert.strictEqual(safety.isBotEnabled(), true, '.bot off must NOT power off the bot');
+
+    // Turn off using .mini off
+    const miniOffMsg = {
+      key: { remoteJid: '923116469820@s.whatsapp.net', fromMe: false },
+      message: { conversation: '.mini off' }
+    };
+    await commandHandler.handleMessage(mockSock, miniOffMsg);
+    assert.strictEqual(safety.isBotEnabled(), false, '.mini off must power off the bot');
+
+    // While offline, commands from non-owners should be ignored
     const nonOwnerMsg = {
       key: { remoteJid: '12345678@s.whatsapp.net', fromMe: false },
       message: { conversation: '.viewonce' }
@@ -92,14 +111,23 @@ async function runAsyncTests() {
     const handled = await commandHandler.handleMessage(mockSock, nonOwnerMsg);
     assert.strictEqual(handled, false, 'Non-owner command should be blocked when bot is offline');
 
-    // While offline, owner waking it up with .bot on should succeed
-    const ownerMsg = {
+    // While offline, old .bot on should NOT wake up the bot
+    const oldBotOnMsg = {
       key: { remoteJid: '923116469820@s.whatsapp.net', fromMe: false },
       message: { conversation: '.bot on' }
     };
-    const wakeHandled = await commandHandler.handleMessage(mockSock, ownerMsg);
-    assert.strictEqual(wakeHandled, true, 'Owner .bot on command should be processed');
-    assert.strictEqual(safety.isBotEnabled(), true, 'Bot should now be re-enabled');
+    const oldWakeHandled = await commandHandler.handleMessage(mockSock, oldBotOnMsg);
+    assert.strictEqual(oldWakeHandled, false, 'Old .bot on command must NOT wake up the bot');
+    assert.strictEqual(safety.isBotEnabled(), false, 'Bot must remain offline');
+
+    // While offline, owner waking it up with .mini on must succeed
+    const ownerWakeMsg = {
+      key: { remoteJid: '923116469820@s.whatsapp.net', fromMe: false },
+      message: { conversation: '.mini on' }
+    };
+    const wakeHandled = await commandHandler.handleMessage(mockSock, ownerWakeMsg);
+    assert.strictEqual(wakeHandled, true, 'Owner .mini on command should be processed');
+    assert.strictEqual(safety.isBotEnabled(), true, 'Bot should now be re-enabled via .mini on');
   });
 
   // Test 5: ContactStore resolves group participant LIDs to Phone numbers
@@ -589,6 +617,75 @@ async function runAsyncTests() {
     // Clean up
     safety.userStrikes.delete(spammerId);
     safety.userCooldowns.delete(spammerId);
+  });
+
+  // Test 16: Korean Movie Search (.kmovie / .kmovies)
+  it('Searches Korean movie metadata and generates English subtitles & dual audio streaming links', async () => {
+    const kmovieCmd = commandHandler.getCommand('kmovie');
+    assert.ok(kmovieCmd, 'Missing kmovie command');
+
+    let sentPayload = null;
+    const mockSock = {
+      sendMessage: async (jid, content) => {
+        sentPayload = content;
+        return { key: { id: 'RESP_KMOVIE' } };
+      }
+    };
+
+    const mockMsg = {
+      key: { remoteJid: '923056499820@s.whatsapp.net', fromMe: true },
+      message: { conversation: '.kmovie parasite' }
+    };
+
+    await kmovieCmd.execute({
+      sock: mockSock,
+      msg: mockMsg,
+      from: '923056499820@s.whatsapp.net',
+      sender: '923056499820@s.whatsapp.net',
+      args: ['parasite']
+    });
+
+    assert.ok(sentPayload !== null, 'Should send response for Korean movie search');
+    const responseText = sentPayload.caption || sentPayload.text || '';
+    assert.ok(responseText.toUpperCase().includes('PARASITE'), 'Response should mention Parasite');
+    assert.ok(responseText.includes('embed.su'), 'Response should contain Embed.su player link');
+    assert.ok(responseText.includes('dramacool.ch'), 'Response should link to Dramacool portal');
+    assert.ok(responseText.includes('English Subtitles'), 'Response should highlight English Subtitles');
+  });
+
+  // Test 17: Korean Series & Drama Search (.kseries / .kdrama)
+  it('Searches Korean drama metadata and generates Season/Episode streaming links with English Subs & Dub', async () => {
+    const kseriesCmd = commandHandler.getCommand('kseries');
+    assert.ok(kseriesCmd, 'Missing kseries command');
+
+    let sentPayload = null;
+    const mockSock = {
+      sendMessage: async (jid, content) => {
+        sentPayload = content;
+        return { key: { id: 'RESP_KSERIES' } };
+      }
+    };
+
+    const mockMsg = {
+      key: { remoteJid: '923056499820@s.whatsapp.net', fromMe: true },
+      message: { conversation: '.kdrama squid game 2 1' }
+    };
+
+    await kseriesCmd.execute({
+      sock: mockSock,
+      msg: mockMsg,
+      from: '923056499820@s.whatsapp.net',
+      sender: '923056499820@s.whatsapp.net',
+      args: ['squid', 'game', '2', '1']
+    });
+
+    assert.ok(sentPayload !== null, 'Should send response for K-Drama search');
+    const responseText = sentPayload.caption || sentPayload.text || '';
+    assert.ok(responseText.toUpperCase().includes('SQUID GAME'), 'Response should mention Squid Game');
+    assert.ok(responseText.includes('Season 2, Episode 1'), 'Response should show Season 2 Episode 1');
+    assert.ok(responseText.includes('embed.su/embed/tv/'), 'Response should contain Embed.su TV player link');
+    assert.ok(responseText.includes('dramacool.ch'), 'Response should link to Dramacool portal');
+    assert.ok(responseText.includes('English Subtitles'), 'Response should highlight English Subtitles');
   });
 
   console.log(`\n=========================================`);
