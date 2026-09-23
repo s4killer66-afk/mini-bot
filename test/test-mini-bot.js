@@ -714,6 +714,80 @@ async function runAsyncTests() {
     assert.strictEqual(safety.getSentMessage('INSTANT_MSG_123')?.extendedTextMessage?.text, 'Test instant response');
   });
 
+  // Test 19: Full Power Switch Reactivation (.mini off -> mini on, minion/minioff, local format 0305...)
+  it('Reactivates successfully with "mini on" (no dot), local Pakistani number format, and LID', async () => {
+    const mockSock = {
+      sendMessage: async (jid, content) => ({ key: { id: 'MOCK_PWR_' + Date.now(), remoteJid: jid } })
+    };
+
+    // Scenario A: Turn off with .mini off, reactivate with "mini on" (no dot)
+    safety.setBotEnabled(true);
+    await commandHandler.handleMessage(mockSock, {
+      key: { remoteJid: '923056499820@s.whatsapp.net', fromMe: false },
+      message: { conversation: '.mini off' }
+    });
+    assert.strictEqual(safety.isBotEnabled(), false, 'Bot should be offline after .mini off');
+
+    const wakeWithNoDot = await commandHandler.handleMessage(mockSock, {
+      key: { remoteJid: '923056499820@s.whatsapp.net', fromMe: false },
+      message: { conversation: 'mini on' }
+    });
+    assert.strictEqual(wakeWithNoDot, true, 'mini on (no dot) must be handled');
+    assert.strictEqual(safety.isBotEnabled(), true, 'Bot should be reactivated via "mini on"');
+
+    // Scenario B: Turn off with "mini off" (no dot), reactivate with ".mini on"
+    await commandHandler.handleMessage(mockSock, {
+      key: { remoteJid: '923056499820@s.whatsapp.net', fromMe: false },
+      message: { conversation: 'mini off' }
+    });
+    assert.strictEqual(safety.isBotEnabled(), false, 'Bot should be offline after "mini off"');
+
+    await commandHandler.handleMessage(mockSock, {
+      key: { remoteJid: '923056499820@s.whatsapp.net', fromMe: false },
+      message: { conversation: '.mini on' }
+    });
+    assert.strictEqual(safety.isBotEnabled(), true, 'Bot should be reactivated via ".mini on"');
+
+    // Scenario C: Local Pakistani format 03056499820 turning off and on
+    await commandHandler.handleMessage(mockSock, {
+      key: { remoteJid: '03056499820@s.whatsapp.net', fromMe: false },
+      message: { conversation: '.mini off' }
+    });
+    assert.strictEqual(safety.isBotEnabled(), false, 'Local format should power off bot');
+
+    await commandHandler.handleMessage(mockSock, {
+      key: { remoteJid: '03056499820@s.whatsapp.net', fromMe: false },
+      message: { conversation: 'mini on' }
+    });
+    assert.strictEqual(safety.isBotEnabled(), true, 'Local format should reactivate bot via "mini on"');
+
+    // Scenario D: minioff and minion single-word commands
+    await commandHandler.handleMessage(mockSock, {
+      key: { remoteJid: '923056499820@s.whatsapp.net', fromMe: false },
+      message: { conversation: 'minioff' }
+    });
+    assert.strictEqual(safety.isBotEnabled(), false, 'minioff single word should power off bot');
+
+    await commandHandler.handleMessage(mockSock, {
+      key: { remoteJid: '923056499820@s.whatsapp.net', fromMe: false },
+      message: { conversation: 'minion' }
+    });
+    assert.strictEqual(safety.isBotEnabled(), true, 'minion single word should power on bot');
+
+    // Scenario E: Group chat with LID reactivation
+    await commandHandler.handleMessage(mockSock, {
+      key: { remoteJid: '120363159007450337@g.us', participant: '923056499820@s.whatsapp.net', fromMe: false },
+      message: { conversation: '.mini off' }
+    });
+    assert.strictEqual(safety.isBotEnabled(), false, 'Group .mini off should power off bot');
+
+    await commandHandler.handleMessage(mockSock, {
+      key: { remoteJid: '120363159007450337@g.us', participant: '923056499820@s.whatsapp.net', fromMe: false },
+      message: { conversation: 'mini on' }
+    });
+    assert.strictEqual(safety.isBotEnabled(), true, 'Group mini on should reactivate bot');
+  });
+
   console.log(`\n=========================================`);
   console.log(`Test Results: ${passedTests} / ${totalTests} passed`);
   console.log(`=========================================\n`);
