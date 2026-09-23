@@ -692,6 +692,28 @@ async function runAsyncTests() {
     assert.ok(responseText.includes('English Subtitles'), 'Response should highlight English Subtitles');
   });
 
+  // Test 18: Instant Phone Response & Protobuf Reconciliation
+  it('Ensures instant delivery without artificial delay and resolves LID addresses to phone JID', async () => {
+    let deliveredJid = null;
+    let deliveredContent = null;
+    const mockSock = {
+      sendMessage: async (jid, content, options) => {
+        deliveredJid = jid;
+        deliveredContent = content;
+        return { key: { id: 'INSTANT_MSG_123', remoteJid: jid } };
+      }
+    };
+
+    // 1. Sending to @lid must normalize to real phone number
+    const t0 = Date.now();
+    await safety.safeSend(mockSock, '230382129692888@lid', { text: 'Test instant response' });
+    const elapsed = Date.now() - t0;
+
+    assert.ok(elapsed < 100, `Message delivery must be instant (took ${elapsed}ms, expected < 100ms)`);
+    assert.ok(!deliveredJid.endsWith('@lid'), 'LID must be normalized to phone number');
+    assert.strictEqual(safety.getSentMessage('INSTANT_MSG_123')?.extendedTextMessage?.text, 'Test instant response');
+  });
+
   console.log(`\n=========================================`);
   console.log(`Test Results: ${passedTests} / ${totalTests} passed`);
   console.log(`=========================================\n`);

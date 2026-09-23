@@ -16,28 +16,43 @@ const safety = require('../lib/safety');
 // TMDB public API key for movie metadata & posters
 const TMDB_API_KEY = '15d2ea6d0dc1d476efbca3eba2b9bbfb';
 
+const movieCache = new Map();
+
 /**
  * Search TMDB for movie details with multi-search fallback
  */
 async function searchMovie(query) {
+  const cacheKey = (query || '').toLowerCase().trim();
+  if (movieCache.has(cacheKey)) {
+    return movieCache.get(cacheKey);
+  }
+
   try {
     const movieUrl = `https://api.themoviedb.org/3/search/movie?query=${encodeURIComponent(query)}&api_key=${TMDB_API_KEY}&language=en-US&page=1`;
     const multiUrl = `https://api.themoviedb.org/3/search/multi?query=${encodeURIComponent(query)}&api_key=${TMDB_API_KEY}&language=en-US&page=1`;
 
     const [movieRes, multiRes] = await Promise.all([
-      fetch(movieUrl, { headers: { 'User-Agent': 'Mozilla/5.0' }, signal: AbortSignal.timeout(4000) }).catch(() => null),
-      fetch(multiUrl, { headers: { 'User-Agent': 'Mozilla/5.0' }, signal: AbortSignal.timeout(4000) }).catch(() => null),
+      fetch(movieUrl, { headers: { 'User-Agent': 'Mozilla/5.0' }, signal: AbortSignal.timeout(2500) }).catch(() => null),
+      fetch(multiUrl, { headers: { 'User-Agent': 'Mozilla/5.0' }, signal: AbortSignal.timeout(2500) }).catch(() => null),
     ]);
 
     if (movieRes && movieRes.ok) {
       const data = await movieRes.json();
-      if (data.results && data.results.length > 0) return data.results[0];
+      if (data.results && data.results.length > 0) {
+        if (movieCache.size > 200) movieCache.delete(movieCache.keys().next().value);
+        movieCache.set(cacheKey, data.results[0]);
+        return data.results[0];
+      }
     }
 
     if (multiRes && multiRes.ok) {
       const data = await multiRes.json();
       const match = data.results?.find(r => r.media_type === 'movie') || data.results?.[0];
-      if (match) return match;
+      if (match) {
+        if (movieCache.size > 200) movieCache.delete(movieCache.keys().next().value);
+        movieCache.set(cacheKey, match);
+        return match;
+      }
     }
 
     return null;
@@ -52,7 +67,7 @@ async function searchMovie(query) {
 async function getMovieTrailer(tmdbId) {
   try {
     const url = `https://api.themoviedb.org/3/movie/${tmdbId}/videos?api_key=${TMDB_API_KEY}&language=en-US`;
-    const res = await fetch(url, { signal: AbortSignal.timeout(4000) });
+    const res = await fetch(url, { signal: AbortSignal.timeout(2000) });
     if (!res.ok) return null;
     const data = await res.json();
     if (data.results && data.results.length > 0) {

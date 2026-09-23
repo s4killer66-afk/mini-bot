@@ -15,15 +15,22 @@ const safety = require('../lib/safety');
 
 const TMDB_API_KEY = '15d2ea6d0dc1d476efbca3eba2b9bbfb';
 
+const animeCache = new Map();
+
 /**
  * Search AniKoto for anime results
  */
 async function searchAniKoto(query) {
+  const cacheKey = (query || '').toLowerCase().trim();
+  if (animeCache.has(cacheKey)) {
+    return animeCache.get(cacheKey);
+  }
+
   try {
     const url = `https://anikoto.cz/filter?keyword=${encodeURIComponent(query)}`;
     const res = await fetch(url, {
       headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)' },
-      signal: AbortSignal.timeout(4500)
+      signal: AbortSignal.timeout(2500)
     });
     if (!res.ok) return [];
     const html = await res.text();
@@ -48,6 +55,10 @@ async function searchAniKoto(query) {
         });
       }
     }
+    if (items.length > 0) {
+      if (animeCache.size > 200) animeCache.delete(animeCache.keys().next().value);
+      animeCache.set(cacheKey, items);
+    }
     return items;
   } catch (e) {
     return [];
@@ -60,7 +71,7 @@ async function searchAniKoto(query) {
 async function getAlternativeTitles(query) {
   try {
     const url = `https://kitsu.io/api/edge/anime?filter[text]=${encodeURIComponent(query)}&page[limit]=1`;
-    const res = await fetch(url, { signal: AbortSignal.timeout(3000) });
+    const res = await fetch(url, { signal: AbortSignal.timeout(2000) });
     if (!res.ok) return [];
     const data = await res.json();
     const attr = data.data?.[0]?.attributes;

@@ -48,32 +48,43 @@ function parseSeriesArgs(args) {
   return { title, season, episode };
 }
 
+const seriesCache = new Map();
+
 /**
  * Search TMDB for TV series with multi-search fallback
  */
 async function searchSeries(query) {
+  const cacheKey = (query || '').toLowerCase().trim();
+  if (seriesCache.has(cacheKey)) {
+    return seriesCache.get(cacheKey);
+  }
+
   try {
-    // 1. Direct TV search
     const tvUrl = `https://api.themoviedb.org/3/search/tv?query=${encodeURIComponent(query)}&api_key=${TMDB_API_KEY}&language=en-US&page=1`;
-    const res = await fetch(tvUrl, {
-      headers: { 'User-Agent': 'Mozilla/5.0' },
-      signal: AbortSignal.timeout(5000)
-    });
-    if (res.ok) {
-      const data = await res.json();
-      if (data.results && data.results.length > 0) return data.results[0];
+    const multiUrl = `https://api.themoviedb.org/3/search/multi?query=${encodeURIComponent(query)}&api_key=${TMDB_API_KEY}&language=en-US&page=1`;
+
+    const [tvRes, multiRes] = await Promise.all([
+      fetch(tvUrl, { headers: { 'User-Agent': 'Mozilla/5.0' }, signal: AbortSignal.timeout(2500) }).catch(() => null),
+      fetch(multiUrl, { headers: { 'User-Agent': 'Mozilla/5.0' }, signal: AbortSignal.timeout(2500) }).catch(() => null),
+    ]);
+
+    if (tvRes && tvRes.ok) {
+      const data = await tvRes.json();
+      if (data.results && data.results.length > 0) {
+        if (seriesCache.size > 200) seriesCache.delete(seriesCache.keys().next().value);
+        seriesCache.set(cacheKey, data.results[0]);
+        return data.results[0];
+      }
     }
 
-    // 2. Multi-search fallback (for Bollywood / regional titles that might be listed flexibly)
-    const multiUrl = `https://api.themoviedb.org/3/search/multi?query=${encodeURIComponent(query)}&api_key=${TMDB_API_KEY}&language=en-US&page=1`;
-    const multiRes = await fetch(multiUrl, {
-      headers: { 'User-Agent': 'Mozilla/5.0' },
-      signal: AbortSignal.timeout(5000)
-    });
-    if (multiRes.ok) {
+    if (multiRes && multiRes.ok) {
       const multiData = await multiRes.json();
       const tvMatch = multiData.results?.find(r => r.media_type === 'tv') || multiData.results?.[0];
-      if (tvMatch) return tvMatch;
+      if (tvMatch) {
+        if (seriesCache.size > 200) seriesCache.delete(seriesCache.keys().next().value);
+        seriesCache.set(cacheKey, tvMatch);
+        return tvMatch;
+      }
     }
 
     return null;
@@ -88,7 +99,7 @@ async function searchSeries(query) {
 async function getSeriesTrailer(tvId) {
   try {
     const url = `https://api.themoviedb.org/3/tv/${tvId}/videos?api_key=${TMDB_API_KEY}&language=en-US`;
-    const res = await fetch(url, { signal: AbortSignal.timeout(4000) });
+    const res = await fetch(url, { signal: AbortSignal.timeout(2000) });
     if (!res.ok) return null;
     const data = await res.json();
     if (data.results && data.results.length > 0) {

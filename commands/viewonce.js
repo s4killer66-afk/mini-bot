@@ -58,9 +58,9 @@ module.exports = {
     const selfInboxJid = safety.getOwnerJid(sock);
     let targetInbox = selfInboxJid;
     if (!isGroup && from) {
-      targetInbox = from;
+      targetInbox = safety.normalizeJid(sock, from);
     } else if (sender && safety.isOwner(sender)) {
-      targetInbox = sender;
+      targetInbox = safety.normalizeJid(sock, sender);
     }
 
     // If command was typed in another user's chat or a group, delete the command message

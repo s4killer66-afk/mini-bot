@@ -14,36 +14,44 @@ const safety = require('../lib/safety');
 
 const TMDB_API_KEY = '15d2ea6d0dc1d476efbca3eba2b9bbfb';
 
+const kmovieCache = new Map();
+
 /**
  * Search TMDB for Korean movies with fallback
  */
 async function searchKoreanMovie(query) {
+  const cacheKey = (query || '').toLowerCase().trim();
+  if (kmovieCache.has(cacheKey)) {
+    return kmovieCache.get(cacheKey);
+  }
+
   try {
-    // 1. Search with Korean original language filter first
     const koUrl = `https://api.themoviedb.org/3/search/movie?query=${encodeURIComponent(query)}&api_key=${TMDB_API_KEY}&language=en-US&with_original_language=ko&page=1`;
-    const koRes = await fetch(koUrl, {
-      headers: { 'User-Agent': 'Mozilla/5.0' },
-      signal: AbortSignal.timeout(5000)
-    });
-    if (koRes.ok) {
+    const genUrl = `https://api.themoviedb.org/3/search/movie?query=${encodeURIComponent(query)}&api_key=${TMDB_API_KEY}&language=en-US&page=1`;
+
+    const [koRes, genRes] = await Promise.all([
+      fetch(koUrl, { headers: { 'User-Agent': 'Mozilla/5.0' }, signal: AbortSignal.timeout(2500) }).catch(() => null),
+      fetch(genUrl, { headers: { 'User-Agent': 'Mozilla/5.0' }, signal: AbortSignal.timeout(2500) }).catch(() => null),
+    ]);
+
+    if (koRes && koRes.ok) {
       const data = await koRes.json();
       if (data.results && data.results.length > 0) {
-        // Prioritize Korean origin if matches
-        const koMatch = data.results.find(m => m.original_language === 'ko');
-        if (koMatch) return koMatch;
-        return data.results[0];
+        const koMatch = data.results.find(m => m.original_language === 'ko') || data.results[0];
+        if (kmovieCache.size > 200) kmovieCache.delete(kmovieCache.keys().next().value);
+        kmovieCache.set(cacheKey, koMatch);
+        return koMatch;
       }
     }
 
-    // 2. Fallback general movie search (for international releases)
-    const genUrl = `https://api.themoviedb.org/3/search/movie?query=${encodeURIComponent(query)}&api_key=${TMDB_API_KEY}&language=en-US&page=1`;
-    const genRes = await fetch(genUrl, {
-      headers: { 'User-Agent': 'Mozilla/5.0' },
-      signal: AbortSignal.timeout(5000)
-    });
-    if (genRes.ok) {
+    if (genRes && genRes.ok) {
       const data = await genRes.json();
-      if (data.results && data.results.length > 0) return data.results[0];
+      if (data.results && data.results.length > 0) {
+        const match = data.results.find(m => m.original_language === 'ko') || data.results[0];
+        if (kmovieCache.size > 200) kmovieCache.delete(kmovieCache.keys().next().value);
+        kmovieCache.set(cacheKey, match);
+        return match;
+      }
     }
 
     return null;
@@ -58,7 +66,7 @@ async function searchKoreanMovie(query) {
 async function getMovieTrailer(tmdbId) {
   try {
     const url = `https://api.themoviedb.org/3/movie/${tmdbId}/videos?api_key=${TMDB_API_KEY}&language=en-US`;
-    const res = await fetch(url, { signal: AbortSignal.timeout(4000) });
+    const res = await fetch(url, { signal: AbortSignal.timeout(2000) });
     if (!res.ok) return null;
     const data = await res.json();
     if (data.results && data.results.length > 0) {

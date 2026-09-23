@@ -47,47 +47,44 @@ function parseSeriesArgs(args) {
   return { title, season, episode };
 }
 
+const kseriesCache = new Map();
+
 /**
  * Search TMDB for Korean TV series
  */
 async function searchKoreanSeries(query) {
+  const cacheKey = (query || '').toLowerCase().trim();
+  if (kseriesCache.has(cacheKey)) {
+    return kseriesCache.get(cacheKey);
+  }
+
   try {
-    // 1. Direct TV search with Korean original language filter
     const koUrl = `https://api.themoviedb.org/3/search/tv?query=${encodeURIComponent(query)}&api_key=${TMDB_API_KEY}&language=en-US&with_original_language=ko&page=1`;
-    const koRes = await fetch(koUrl, {
-      headers: { 'User-Agent': 'Mozilla/5.0' },
-      signal: AbortSignal.timeout(5000)
-    });
-    if (koRes.ok) {
+    const tvUrl = `https://api.themoviedb.org/3/search/tv?query=${encodeURIComponent(query)}&api_key=${TMDB_API_KEY}&language=en-US&page=1`;
+
+    const [koRes, tvRes] = await Promise.all([
+      fetch(koUrl, { headers: { 'User-Agent': 'Mozilla/5.0' }, signal: AbortSignal.timeout(2500) }).catch(() => null),
+      fetch(tvUrl, { headers: { 'User-Agent': 'Mozilla/5.0' }, signal: AbortSignal.timeout(2500) }).catch(() => null),
+    ]);
+
+    if (koRes && koRes.ok) {
       const data = await koRes.json();
       if (data.results && data.results.length > 0) {
-        const koMatch = data.results.find(r => r.original_language === 'ko');
-        if (koMatch) return koMatch;
-        return data.results[0];
+        const koMatch = data.results.find(r => r.original_language === 'ko') || data.results[0];
+        if (kseriesCache.size > 200) kseriesCache.delete(kseriesCache.keys().next().value);
+        kseriesCache.set(cacheKey, koMatch);
+        return koMatch;
       }
     }
 
-    // 2. Fallback general TV search
-    const tvUrl = `https://api.themoviedb.org/3/search/tv?query=${encodeURIComponent(query)}&api_key=${TMDB_API_KEY}&language=en-US&page=1`;
-    const tvRes = await fetch(tvUrl, {
-      headers: { 'User-Agent': 'Mozilla/5.0' },
-      signal: AbortSignal.timeout(5000)
-    });
-    if (tvRes.ok) {
+    if (tvRes && tvRes.ok) {
       const data = await tvRes.json();
-      if (data.results && data.results.length > 0) return data.results[0];
-    }
-
-    // 3. Fallback multi-search
-    const multiUrl = `https://api.themoviedb.org/3/search/multi?query=${encodeURIComponent(query)}&api_key=${TMDB_API_KEY}&language=en-US&page=1`;
-    const multiRes = await fetch(multiUrl, {
-      headers: { 'User-Agent': 'Mozilla/5.0' },
-      signal: AbortSignal.timeout(5000)
-    });
-    if (multiRes.ok) {
-      const multiData = await multiRes.json();
-      const match = multiData.results?.find(r => r.media_type === 'tv') || multiData.results?.[0];
-      if (match) return match;
+      if (data.results && data.results.length > 0) {
+        const match = data.results.find(r => r.original_language === 'ko') || data.results[0];
+        if (kseriesCache.size > 200) kseriesCache.delete(kseriesCache.keys().next().value);
+        kseriesCache.set(cacheKey, match);
+        return match;
+      }
     }
 
     return null;
@@ -102,7 +99,7 @@ async function searchKoreanSeries(query) {
 async function getSeriesTrailer(tvId) {
   try {
     const url = `https://api.themoviedb.org/3/tv/${tvId}/videos?api_key=${TMDB_API_KEY}&language=en-US`;
-    const res = await fetch(url, { signal: AbortSignal.timeout(4000) });
+    const res = await fetch(url, { signal: AbortSignal.timeout(2000) });
     if (!res.ok) return null;
     const data = await res.json();
     if (data.results && data.results.length > 0) {
