@@ -18,6 +18,7 @@
   "author": "Antigravity",
   "license": "ISC",
   "dependencies": {
+    "@pinggy/pinggy": "^0.5.2",
     "@whiskeysockets/baileys": "^6.7.9",
     "cors": "^2.8.5",
     "dotenv": "^16.4.7",

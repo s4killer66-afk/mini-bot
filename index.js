@@ -74,11 +74,28 @@ app.get('/api/qr', (req, res) => {
 });
 
 // Start Express Server & Baileys Connection
-const server = app.listen(config.port, () => {
+const server = app.listen(config.port, async () => {
   console.log(`\n======================================================`);
   console.log(`⚡ ${config.botName.toUpperCase()} — MINI WHATSAPP BOT`);
-  console.log(`🌐 Pairing Dashboard: http://localhost:${config.port}`);
+  console.log(`🌐 Local Dashboard: http://localhost:${config.port}`);
   console.log(`📋 Active Commands: ${config.prefix}viewonce, ${config.prefix}antidelet, ${config.prefix}bot`);
+
+  // Auto-generate public web pairing URL so user can link via any browser
+  try {
+    const { pinggy } = require('@pinggy/pinggy');
+    const tunnel = await pinggy.forward({ forwarding: `localhost:${config.port}` });
+    const publicUrls = await tunnel.urls();
+    if (publicUrls && publicUrls.length > 0) {
+      console.log(`------------------------------------------------------`);
+      console.log(`🌍 PUBLIC PAIRING WEBPAGE:`);
+      console.log(`👉 ${publicUrls[0]}`);
+      console.log(`Open this link in your browser to link WhatsApp instantly!`);
+      console.log(`------------------------------------------------------`);
+    }
+  } catch (tunnelErr) {
+    // Tunnel is non-blocking fallback
+  }
+
   console.log(`======================================================\n`);
 
   // Start WhatsApp Client in background
