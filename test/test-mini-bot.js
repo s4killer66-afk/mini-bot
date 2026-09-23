@@ -926,6 +926,38 @@ async function runAsyncTests() {
     safety.setBotEnabled(true);
   });
 
+  // Test 22: Pre-send Caching & Anti-Waiting Reconciliation Guard
+  it('Pre-generates messageId, caches payload before network send, and verifies retry reconciliation', async () => {
+    let capturedOptions = null;
+    let messageInCacheDuringSend = false;
+
+    const mockSock = {
+      sendMessage: async (jid, content, options) => {
+        capturedOptions = options;
+        // Verify that before sendMessage returns, the message is ALREADY in safety cache!
+        if (options?.messageId) {
+          const inCache = safety.getSentMessage(options.messageId);
+          if (inCache && inCache.extendedTextMessage?.text === 'Pre-cache test message') {
+            messageInCacheDuringSend = true;
+          }
+        }
+        return {
+          key: { id: options?.messageId || 'MOCK_ID', remoteJid: jid, fromMe: true },
+          message: { extendedTextMessage: { text: content.text } }
+        };
+      }
+    };
+
+    const sent = await safety.safeSend(mockSock, '923056499820@s.whatsapp.net', { text: 'Pre-cache test message' });
+
+    assert.ok(capturedOptions?.messageId, 'safeSend must pre-generate messageId in options');
+    assert.strictEqual(messageInCacheDuringSend, true, 'Message must be cached in memory BEFORE network relay');
+    assert.strictEqual(sent.key.id, capturedOptions.messageId, 'Sent result key ID must match pre-generated ID');
+
+    const cachedProto = safety.getSentMessage(sent.key.id);
+    assert.ok(cachedProto?.extendedTextMessage?.text, 'Cached sent message must be decodable proto format');
+  });
+
   console.log(`\n=========================================`);
   console.log(`Test Results: ${passedTests} / ${totalTests} passed`);
   console.log(`=========================================\n`);
