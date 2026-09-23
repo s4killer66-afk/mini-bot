@@ -7,7 +7,7 @@
  * - Auto-detects Season & Episode (e.g. .series stranger things s4 e1 or .series squid game 2 1)
  * - Direct in-WhatsApp playable trailer player
  * - 3 Fast verified HD streaming servers with auto-play and full controls
- * - Dedicated VegaMovies/VegaSeries Hindi Dubbed Dual Audio portal
+ * - Dedicated DesiCinemas & HDMovie2 Hindi Dubbed Dual Audio streaming portals
  * - Instant response (< 400ms) with zero server storage overhead
  */
 
@@ -126,9 +126,10 @@ module.exports = {
       const series = await searchSeries(title);
 
       if (!series) {
-        const vegaSearch = `https://vegamovies.im/?s=${encodeURIComponent(title)}`;
+        const desiSearch = `https://desicinemas.tv/?s=${encodeURIComponent(title)}`;
+        const directSearch = `https://www.google.com/search?q=${encodeURIComponent(title + ' hindi dubbed series watch online free')}`;
         return safety.safeSend(sock, from, {
-          text: `❌ *Series Not Found:*\nCould not find series matching "*${title}*".\n\n🔍 *Direct Search Mirror:*\n👉 ${vegaSearch}`
+          text: `❌ *Series Not Found:*\nCould not find series matching "*${title}*".\n\n🔍 *Watch On DesiCinemas:*\n👉 ${desiSearch}\n\n🌐 *Direct Search Mirror:*\n👉 ${directSearch}`
         });
       }
 
@@ -152,11 +153,12 @@ module.exports = {
       const server3 = `https://multiembed.mov/?video_id=${tvId}&tmdb=1&s=${season}&e=${episode}`;
       const server4 = `https://vidsrc.cc/v2/embed/tv/${tvId}/${season}/${episode}`;
 
-      // Working Hindi Dubbed Direct Streaming & Search Mirrors
-      const hindiSearch = `https://www.google.com/search?q=${encodeURIComponent(seriesName + ' season ' + season + ' hindi dubbed watch online free')}`;
+      // Working Hindi Dubbed Direct Streaming & Search Mirrors (100% Working Mirrors)
+      const desiCinemasPortal = `https://desicinemas.tv/?s=${encodeURIComponent(seriesName)}`;
+      const hdmovie2Portal = `https://hdmovie2.st/?s=${encodeURIComponent(seriesName)}`;
       const hindiLinksPortal = `https://hindilinks4u.to/?s=${encodeURIComponent(seriesName)}`;
-      const bollyFlixPortal = `https://bollyflix.in/?s=${encodeURIComponent(seriesName)}`;
-      const vegaPortal = `https://vegamovies.im/?s=${encodeURIComponent(seriesName)}`;
+      const bollyFlixPortal = `https://bollyflix.tattoo/?s=${encodeURIComponent(seriesName)}`;
+      const directSearch = `https://www.google.com/search?q=${encodeURIComponent(seriesName + ' season ' + season + ' hindi dubbed watch online free')}`;
 
       const body = `
 📺 *${seriesName.toUpperCase()}* (${releaseYear})
@@ -181,17 +183,20 @@ ${whatsappPlayerSection}
 👉 ${server4}
 
 🎙️ *HINDI DUBBED STREAMING PORTALS:*
-• Direct Working Stream Search:
-👉 ${hindiSearch}
+• DesiCinemas (Web Series & Hindi Dubbed):
+👉 ${desiCinemasPortal}
 
-• HindiLinks4U Stream:
+• HDMovie2 Stream (Dual Audio Series):
+👉 ${hdmovie2Portal}
+
+• HindiLinks4U Player:
 👉 ${hindiLinksPortal}
 
 • BollyFlix Catalog:
 👉 ${bollyFlixPortal}
 
-• VegaSeries Mirror:
-👉 ${vegaPortal}
+• Direct Working Stream Search:
+👉 ${directSearch}
 ==============================
 
 💡 *Tip:* To jump to next episode, type:

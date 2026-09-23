@@ -430,9 +430,11 @@ async function runAsyncTests() {
     assert.ok(sentPayload !== null, 'Should send response for movie search');
     const responseText = sentPayload.caption || sentPayload.text || '';
     assert.ok(responseText.toUpperCase().includes('TITANIC'), 'Response should mention Titanic');
-    assert.ok(responseText.includes('vidsrc.to'), 'Response should contain verified vidsrc streaming link');
+    assert.ok(responseText.includes('embed.su'), 'Response should contain verified HD streaming link');
     assert.ok(responseText.includes('Hindi Dubbed'), 'Response should mention Dual Audio / Hindi Dubbed');
-    assert.ok(responseText.includes('vegamovies.im'), 'Response should mention Hindi Dubbed streaming portal');
+    assert.ok(responseText.includes('desicinemas.tv'), 'Response should mention DesiCinemas streaming portal');
+    assert.ok(responseText.includes('hdmovie2.st'), 'Response should mention HDMovie2 streaming portal');
+    assert.ok(!responseText.includes('vegamovies'), 'Response must NOT contain vegamovies');
     assert.ok(responseText.includes('PLAY DIRECTLY IN WHATSAPP'), 'Response should include direct in-WhatsApp player');
   });
 
@@ -499,9 +501,11 @@ async function runAsyncTests() {
     const responseText = sentPayload.text || sentPayload.caption || '';
     assert.ok(responseText.toUpperCase().includes('SQUID GAME'), 'Response should mention Squid Game');
     assert.ok(responseText.includes('Season 2, Episode 1'), 'Response should show Season 2, Episode 1');
-    assert.ok(responseText.includes('vidsrc.to/embed/tv/'), 'Response should contain vidsrc TV streaming link');
+    assert.ok(responseText.includes('embed.su/embed/tv/'), 'Response should contain verified TV streaming link');
     assert.ok(responseText.includes('Hindi Dubbed'), 'Response should mention Dual Audio / Hindi Dubbed');
-    assert.ok(responseText.includes('vegamovies.im'), 'Response should link to Hindi Dubbed series portal');
+    assert.ok(responseText.includes('desicinemas.tv'), 'Response should link to DesiCinemas series portal');
+    assert.ok(responseText.includes('hdmovie2.st'), 'Response should link to HDMovie2 series portal');
+    assert.ok(!responseText.includes('vegamovies'), 'Response must NOT contain vegamovies');
   });
 
   // Test 14: Group Admin Mute and Unmute commands

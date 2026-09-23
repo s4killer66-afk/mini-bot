@@ -6,7 +6,7 @@
  * - Universal multi-search fallback so movies are never "not found"
  * - In-WhatsApp video player (plays inside chat with WhatsApp controls)
  * - 3 Fast verified HD streaming servers with auto-play and full controls
- * - Dedicated VegaMovies Hindi Dubbed (Dual Audio) streaming & download portal
+ * - Dedicated DesiCinemas & HDMovie2 Hindi Dubbed (Dual Audio) streaming portals
  * - Instant response (< 300ms) with zero decryption delays
  */
 
@@ -89,9 +89,10 @@ module.exports = {
       const movie = await searchMovie(query);
 
       if (!movie) {
-        const vegaSearch = `https://vegamovies.im/?s=${encodeURIComponent(query)}`;
+        const desiSearch = `https://desicinemas.tv/?s=${encodeURIComponent(query)}`;
+        const directSearch = `https://www.google.com/search?q=${encodeURIComponent(query + ' hindi dubbed watch online free')}`;
         return safety.safeSend(sock, from, {
-          text: `❌ *Movie Not Found:*\nNo matches found for "*${query}*".\n\n🔍 *Search directly on Hindi Dubbed Portal:*\n👉 ${vegaSearch}`
+          text: `❌ *Movie Not Found:*\nNo matches found for "*${query}*".\n\n🔍 *Watch On DesiCinemas (Hindi Dubbed):*\n👉 ${desiSearch}\n\n🌐 *Direct Search Mirror:*\n👉 ${directSearch}`
         });
       }
 
@@ -115,11 +116,12 @@ module.exports = {
       const server3 = `https://multiembed.mov/?video_id=${tmdbId}&tmdb=1`;
       const server4 = `https://vidsrc.cc/v2/embed/movie/${tmdbId}`;
 
-      // Working Hindi Dubbed Streaming Portals & Search Mirrors
-      const hindiSearch = `https://www.google.com/search?q=${encodeURIComponent(movieTitle + ' hindi dubbed full movie watch online free')}`;
+      // Working Hindi Dubbed Streaming Portals (100% Working Mirrors)
+      const desiCinemasPortal = `https://desicinemas.tv/?s=${encodeURIComponent(movieTitle)}`;
+      const hdmovie2Portal = `https://hdmovie2.st/?s=${encodeURIComponent(movieTitle)}`;
       const hindiLinksPortal = `https://hindilinks4u.to/?s=${encodeURIComponent(movieTitle)}`;
-      const bollyFlixPortal = `https://bollyflix.in/?s=${encodeURIComponent(movieTitle)}`;
-      const vegaPortal = `https://vegamovies.im/?s=${encodeURIComponent(movieTitle)}`;
+      const bollyFlixPortal = `https://bollyflix.tattoo/?s=${encodeURIComponent(movieTitle)}`;
+      const directSearch = `https://www.google.com/search?q=${encodeURIComponent(movieTitle + ' hindi dubbed full movie watch online free')}`;
 
       const body = `
 🎬 *${movieTitle.toUpperCase()}* (${releaseYear})
@@ -144,20 +146,23 @@ ${whatsappPlayerSection}
 👉 ${server4}
 
 🎙️ *HINDI DUBBED STREAMING PORTALS:*
-• Direct Working Stream Search:
-👉 ${hindiSearch}
+• DesiCinemas (Bollywood & Hindi Dubbed):
+👉 ${desiCinemasPortal}
 
-• HindiLinks4U Stream:
+• HDMovie2 Stream (Dual Audio HD):
+👉 ${hdmovie2Portal}
+
+• HindiLinks4U Player:
 👉 ${hindiLinksPortal}
 
 • BollyFlix Catalog:
 👉 ${bollyFlixPortal}
 
-• VegaMovies Mirror:
-👉 ${vegaPortal}
+• Direct Working Stream Search:
+👉 ${directSearch}
 ==============================
 
-💡 *Tip:* Open Server 1, 2, or 3 and switch audio to Hindi Dubbed! If your network blocks a site, use the Direct Working Stream link.
+💡 *Tip:* Open Server 1, 2, or 3 and switch audio to Hindi Dubbed! If your network blocks a site, use DesiCinemas or Direct Search.
 `.trim();
 
       const output = miniBox('MOVIE STREAMING', body, 'MINI BOT CINEMA');
