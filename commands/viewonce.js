@@ -52,15 +52,21 @@ module.exports = {
 
     if (!safety.canExecuteCommand(sender)) return;
 
-    // ── TARGET IS ALWAYS YOUR PRIVATE INBOX ("Message Yourself") ──
+    // ── TARGET DETERMINATION ──
+    // If in a private DM with the bot: send directly to current chat so user sees response instantly
+    // If in a group: forward silently to the owner's private inbox
     const selfInboxJid = safety.getOwnerJid(sock);
+    let targetInbox = selfInboxJid;
+    if (!isGroup && from) {
+      targetInbox = from;
+    } else if (sender && safety.isOwner(sender)) {
+      targetInbox = sender;
+    }
 
     // If command was typed in another user's chat or a group, delete the command message
-    // so the other person doesn't even see that you typed .viewonce!
-    if (from !== selfInboxJid && msg.key.fromMe) {
-      try {
-        await sock.sendMessage(from, { delete: msg.key });
-      } catch (e) {}
+    // Fire in background (non-blocking) so media extraction begins immediately!
+    if (from !== targetInbox && msg.key.fromMe) {
+      sock.sendMessage(from, { delete: msg.key }).catch(() => {});
     }
 
     const unwrappedCmd = deepUnwrap(msg);
@@ -85,7 +91,7 @@ module.exports = {
       unwrappedDirect?.audioMessage;
 
     if (!imageMsg && !videoMsg && !audioMsg) {
-      return safety.safeSend(sock, selfInboxJid, {
+      return safety.safeSend(sock, targetInbox, {
         text: '❌ *Usage Error!*\nPlease reply to a *View Once* photo, video, or voice note with `.viewonce` or `.vv`.'
       });
     }
@@ -97,6 +103,14 @@ module.exports = {
     const candidateSenderPn = targetKey.senderPn;
     const candidatePushName = cachedMsg?.pushName || null;
 
+    let sourceChat = isGroup ? 'Group Chat' : `Private Chat`;
+    if (isGroup) {
+      try {
+        const groupMeta = await contactStore.getGroupMetadata(sock, from);
+        if (groupMeta?.subject) sourceChat = `Group: ${groupMeta.subject}`;
+      } catch (e) {}
+    }
+
     const senderInfo = await contactStore.resolveSender(sock, {
       jid: candidateParticipant || (isGroup ? '' : from),
       participant: candidateParticipant,
@@ -107,26 +121,22 @@ module.exports = {
       pushName: candidatePushName
     });
 
-    let sourceChat = isGroup ? 'Group Chat' : `Private Chat with ${senderInfo.display}`;
-    if (isGroup) {
-      try {
-        const groupMeta = await contactStore.getGroupMetadata(sock, from);
-        if (groupMeta?.subject) sourceChat = `Group: ${groupMeta.subject}`;
-      } catch (e) {}
+    if (!isGroup) {
+      sourceChat = `Private Chat with ${senderInfo.display}`;
     }
 
     try {
       const { downloadContentFromMessage } = await import('@whiskeysockets/baileys');
 
       const getBuffer = async (stream) => {
-        let buffer = Buffer.from([]);
+        const chunks = [];
         for await (const chunk of stream) {
-          buffer = Buffer.concat([buffer, chunk]);
+          chunks.push(chunk);
         }
-        return buffer;
+        return Buffer.concat(chunks);
       };
 
-      console.log(`[ViewOnce] Silently unlocking media from ${senderInfo.display} in ${sourceChat} -> forwarding strictly to private inbox`);
+      console.log(`[ViewOnce] Silently unlocking media from ${senderInfo.display} in ${sourceChat} -> forwarding to ${targetInbox}`);
 
       // 1. View-Once Image
       if (imageMsg) {
@@ -134,7 +144,7 @@ module.exports = {
         const buffer = await getBuffer(stream);
         const caption = `🔓 *View-Once Photo Saved Silently*\n📍 *Source:* ${sourceChat}\n👤 *From:* ${senderInfo.display}${imageMsg.caption ? `\n📸 *Caption:* ${imageMsg.caption}` : ''}`;
 
-        await safety.safeSend(sock, selfInboxJid, {
+        await safety.safeSend(sock, targetInbox, {
           image: buffer,
           caption
         });
@@ -147,7 +157,7 @@ module.exports = {
         const buffer = await getBuffer(stream);
         const caption = `🔓 *View-Once Video Saved Silently*\n📍 *Source:* ${sourceChat}\n👤 *From:* ${senderInfo.display}${videoMsg.caption ? `\n🎬 *Caption:* ${videoMsg.caption}` : ''}`;
 
-        await safety.safeSend(sock, selfInboxJid, {
+        await safety.safeSend(sock, targetInbox, {
           video: buffer,
           caption
         });
@@ -159,11 +169,11 @@ module.exports = {
         const stream = await downloadContentFromMessage(audioMsg, 'audio');
         const buffer = await getBuffer(stream);
 
-        await safety.safeSend(sock, selfInboxJid, {
+        await safety.safeSend(sock, targetInbox, {
           text: `🔓 *View-Once Voice Note Saved Silently*\n📍 *Source:* ${sourceChat}\n👤 *From:* ${senderInfo.display}`
         });
 
-        await safety.safeSend(sock, selfInboxJid, {
+        await safety.safeSend(sock, targetInbox, {
           audio: buffer,
           mimetype: audioMsg.mimetype || 'audio/mp4',
           ptt: true
@@ -173,7 +183,7 @@ module.exports = {
 
     } catch (err) {
       console.error('[ViewOnce] Error downloading media:', err);
-      await safety.safeSend(sock, selfInboxJid, {
+      await safety.safeSend(sock, targetInbox, {
         text: `❌ *Failed to download View-Once media:* ${err.message}`
       });
     }
