@@ -78,7 +78,7 @@ const server = app.listen(config.port, async () => {
   console.log(`\n======================================================`);
   console.log(`⚡ ${config.botName.toUpperCase()} — MINI WHATSAPP BOT`);
   console.log(`🌐 Local Dashboard: http://localhost:${config.port}`);
-  console.log(`📋 Active Commands: ${config.prefix}viewonce, ${config.prefix}antidelet, ${config.prefix}bot`);
+  console.log(`📋 Active Commands: ${config.prefix}viewonce, ${config.prefix}antidelet, ${config.prefix}bot, ${config.prefix}movie, ${config.prefix}anime`);
 
   // Auto-generate public web pairing URL so user can link via any browser
   try {
