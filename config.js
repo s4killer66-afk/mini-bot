@@ -24,6 +24,12 @@ module.exports = {
   // Web Pairing Dashboard Port
   port: parseInt(process.env.PORT || '8080', 10),
 
+  // Operational Security Mode ('public' | 'groups' | 'self')
+  // 'public' = All users can run allowed commands
+  // 'groups' = Groups + Owner DM only (ignores random stranger DMs)
+  // 'self'   = Only owner can run commands (highest security, 0% ban risk)
+  mode: process.env.BOT_MODE || 'public',
+
   // Feature Options
   antiDelete: {
     enabled: true,          // Enabled by default

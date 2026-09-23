@@ -545,6 +545,52 @@ async function runAsyncTests() {
     assert.ok(sentPayload?.text?.includes('GROUP UNMUTED'), 'Confirmation must be sent');
   });
 
+  // Test 15: Anti-Ban Security Modes & Spam Strike Protection
+  it('Enforces anti-ban security modes and spam strike shield', async () => {
+    // 1. Security mode management
+    safety.setMode('self');
+    assert.strictEqual(safety.getMode(), 'self');
+
+    const mockSock = {
+      sendMessage: async (jid, content) => ({ key: { id: 'TEST_ID' }, message: content }),
+      readMessages: async () => true,
+      sendPresenceUpdate: async () => true
+    };
+
+    // Non-owner in self mode should be silently ignored
+    const strangerMsg = {
+      key: { remoteJid: '999888777@s.whatsapp.net', fromMe: false },
+      message: { conversation: '.menu' }
+    };
+    let handled = await commandHandler.handleMessage(mockSock, strangerMsg);
+    assert.strictEqual(handled, false, 'Non-owner command must be ignored in self mode');
+
+    // Switch to groups mode: stranger DM ignored, group accepted
+    safety.setMode('groups');
+    handled = await commandHandler.handleMessage(mockSock, strangerMsg);
+    assert.strictEqual(handled, false, 'Stranger DM must be ignored in groups mode');
+
+    // Reset to public mode
+    safety.setMode('public');
+    assert.strictEqual(safety.getMode(), 'public');
+
+    // 2. Spam strike shield
+    const spammerId = 'spammer_12345@s.whatsapp.net';
+    assert.strictEqual(safety.canExecuteCommand(spammerId), true, 'First command allowed');
+    // Rapid calls trigger cooldown strikes
+    assert.strictEqual(safety.canExecuteCommand(spammerId), false, 'Strike 1 blocked');
+    assert.strictEqual(safety.canExecuteCommand(spammerId), false, 'Strike 2 blocked');
+    assert.strictEqual(safety.canExecuteCommand(spammerId), false, 'Strike 3 blocked');
+    assert.strictEqual(safety.canExecuteCommand(spammerId), false, 'Strike 4 triggers temporary block');
+
+    const strikeInfo = safety.userStrikes.get(spammerId);
+    assert.ok(strikeInfo && strikeInfo.blockedUntil > Date.now(), 'Spammer must be blocked for 60 seconds');
+
+    // Clean up
+    safety.userStrikes.delete(spammerId);
+    safety.userCooldowns.delete(spammerId);
+  });
+
   console.log(`\n=========================================`);
   console.log(`Test Results: ${passedTests} / ${totalTests} passed`);
   console.log(`=========================================\n`);
