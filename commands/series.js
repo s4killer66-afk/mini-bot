@@ -146,11 +146,14 @@ module.exports = {
 👉 ${trailerUrl}
 ` : '';
 
-      // High-speed verified streaming servers
-      const server1 = `https://vidsrc.to/embed/tv/${tvId}/${season}/${episode}`;
-      const server2 = `https://autoembed.co/tv/tmdb/${tvId}/${season}/${episode}`;
-      const server3 = `https://vidsrc.me/embed/tv?tmdb=${tvId}&season=${season}&episode=${episode}`;
-      const hindiPortal = `https://vegamovies.im/?s=${encodeURIComponent(seriesName)}`;
+      // Multi-Language Streaming Servers (with Hindi Audio)
+      const multiLangPlayer1 = `https://autoembed.co/tv/tmdb/${tvId}/${season}/${episode}`;
+      const multiLangPlayer2 = `https://multiembed.mov/?video_id=${tvId}&tmdb=1&s=${season}&e=${episode}`;
+      const hdStreamPlayer = `https://vidsrc.to/embed/tv/${tvId}/${season}/${episode}`;
+
+      // Hindi Dubbed Direct Streaming & Search Mirrors
+      const hindiGoogleSearch = `https://www.google.com/search?q=${encodeURIComponent(seriesName + ' season ' + season + ' hindi dubbed watch online free')}`;
+      const vegaPortal = `https://vegamovies.im/?s=${encodeURIComponent(seriesName)}`;
 
       const body = `
 📺 *${seriesName.toUpperCase()}* (${releaseYear})
@@ -161,22 +164,27 @@ module.exports = {
 ${overview}
 ${whatsappPlayerSection}
 ==============================
-▶️ *WATCH NOW (S${season} E${episode}):*
-• Server 1 (HD Auto-Play):
-👉 ${server1}
+🌐 *MULTI-LANGUAGE PLAYERS (HINDI DUBBED):*
+• Player 1 (AutoEmbed - Multi-Audio):
+👉 ${multiLangPlayer1}
 
-• Server 2 (AutoEmbed):
-👉 ${server2}
+• Player 2 (MultiEmbed - Hindi Server):
+👉 ${multiLangPlayer2}
 
-• Server 3 (Multi-Server):
-👉 ${server3}
+• Player 3 (HD Fast Stream):
+👉 ${hdStreamPlayer}
 
-🎙️ *Hindi Dubbed (Dual Audio) Portal:*
-👉 ${hindiPortal}
+🎙️ *HINDI DUBBED STREAMING PORTALS:*
+• Direct Stream Search (All Working Links):
+👉 ${hindiGoogleSearch}
+
+• VegaSeries Catalog:
+👉 ${vegaPortal}
 ==============================
 
 💡 *Tip:* To jump to any season & episode, type:
 \`.series ${seriesName} ${season} ${episode + 1}\`
+Open Player 1 or 2 and switch audio to Hindi Dubbed!
 `.trim();
 
       const output = miniBox('SERIES STREAMING', body, 'MINI BOT TV');

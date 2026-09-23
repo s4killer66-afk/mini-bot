@@ -109,11 +109,14 @@ module.exports = {
 👉 ${trailerUrl}
 ` : '';
 
-      // Verified Working Full Movie Streaming Servers
-      const playerServer1 = `https://vidsrc.to/embed/movie/${tmdbId}`;
-      const playerServer2 = `https://autoembed.co/movie/tmdb/${tmdbId}`;
-      const playerServer3 = `https://vidsrc.me/embed/movie?tmdb=${tmdbId}`;
-      const hindiPortal = `https://vegamovies.im/?s=${encodeURIComponent(movieTitle)}`;
+      // Multi-Language Streaming Servers (with Hindi Audio)
+      const multiLangPlayer1 = `https://autoembed.co/movie/tmdb/${tmdbId}`;
+      const multiLangPlayer2 = `https://multiembed.mov/?video_id=${tmdbId}&tmdb=1`;
+      const hdStreamPlayer = `https://vidsrc.to/embed/movie/${tmdbId}`;
+
+      // Hindi Dubbed Direct Streaming & Search Mirrors
+      const hindiGoogleSearch = `https://www.google.com/search?q=${encodeURIComponent(movieTitle + ' hindi dubbed watch online full movie free')}`;
+      const vegaPortal = `https://vegamovies.im/?s=${encodeURIComponent(movieTitle)}`;
 
       const body = `
 🎬 *${movieTitle.toUpperCase()}* (${releaseYear})
@@ -124,21 +127,25 @@ module.exports = {
 ${overview}
 ${whatsappPlayerSection}
 ==============================
-🌐 *WATCH FULL MOVIE (Instant HD Streams):*
-• Server 1 (HD Auto-Play):
-👉 ${playerServer1}
+🌐 *MULTI-LANGUAGE PLAYERS (HINDI DUBBED):*
+• Player 1 (AutoEmbed - Multi-Audio):
+👉 ${multiLangPlayer1}
 
-• Server 2 (AutoEmbed):
-👉 ${playerServer2}
+• Player 2 (MultiEmbed - Hindi Server):
+👉 ${multiLangPlayer2}
 
-• Server 3 (Multi-Server):
-👉 ${playerServer3}
+• Player 3 (HD Fast Stream):
+👉 ${hdStreamPlayer}
 
-🎙️ *Hindi Dubbed (Dual Audio) Portal:*
-👉 ${hindiPortal}
+🎙️ *HINDI DUBBED STREAMING PORTALS:*
+• Direct Stream Search (All Working Links):
+👉 ${hindiGoogleSearch}
+
+• VegaMovies Catalog:
+👉 ${vegaPortal}
 ==============================
 
-💡 *Tip:* Tap Server 1 to watch the full 2-hour movie with play/pause, seek, and fullscreen controls!
+💡 *Tip:* Open Player 1 or Player 2 and switch audio track to Hindi Dubbed! If an ISP blocks a site, use the Direct Stream Search link to open unblocked streams.
 `.trim();
 
       const output = miniBox('MOVIE STREAMING', body, 'MINI BOT CINEMA');
