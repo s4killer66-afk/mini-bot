@@ -788,6 +788,70 @@ async function runAsyncTests() {
     assert.strictEqual(safety.isBotEnabled(), true, 'Group mini on should reactivate bot');
   });
 
+  // Test 20: Anti-Tag & Anti-Mass-Mention Guarantee
+  it('Guarantees the bot NEVER tags or mass-mentions members in group chats', async () => {
+    // 1. Verify no tagall, hidetag, or mention-all command exists in commandHandler
+    assert.strictEqual(commandHandler.getCommand('tagall'), null, 'tagall command must NOT exist');
+    assert.strictEqual(commandHandler.getCommand('hidetag'), null, 'hidetag command must NOT exist');
+    assert.strictEqual(commandHandler.getCommand('tag'), null, 'tag command must NOT exist');
+    assert.strictEqual(commandHandler.getCommand('everyone'), null, 'everyone command must NOT exist');
+
+    // 2. Test safeSend automatically strips mentions when sending to group chats (@g.us)
+    let dispatchedContent = null;
+    let dispatchedOptions = null;
+    const mockSock = {
+      sendMessage: async (jid, content, options) => {
+        dispatchedContent = content;
+        dispatchedOptions = options;
+        return { key: { id: 'MOCK_NOTAG_' + Date.now(), remoteJid: jid } };
+      }
+    };
+
+    // Even if content or options contains mentions, safeSend must completely strip them in group chats
+    await safety.safeSend(
+      mockSock,
+      '120363159007450337@g.us',
+      {
+        text: 'This is a test notification',
+        mentions: ['923001112233@s.whatsapp.net', '923004445566@s.whatsapp.net'],
+        contextInfo: { mentionedJid: ['923001112233@s.whatsapp.net'] }
+      },
+      {
+        mentions: ['923001112233@s.whatsapp.net'],
+        contextInfo: { mentionedJid: ['923001112233@s.whatsapp.net'] }
+      }
+    );
+
+    assert.strictEqual(dispatchedContent.mentions, undefined, 'Content mentions must be stripped in groups');
+    assert.strictEqual(dispatchedContent.contextInfo?.mentionedJid, undefined, 'Content contextInfo.mentionedJid must be stripped in groups');
+    assert.strictEqual(dispatchedOptions.mentions, undefined, 'Option mentions must be stripped in groups');
+    assert.strictEqual(dispatchedOptions.contextInfo?.mentionedJid, undefined, 'Option contextInfo.mentionedJid must be stripped in groups');
+
+    // 3. Verify .mute and .unmute do not mention any users
+    const muteCmd = commandHandler.getCommand('mute');
+    dispatchedContent = null;
+    await muteCmd.execute({
+      sock: {
+        ...mockSock,
+        groupMetadata: async () => ({
+          participants: [
+            { id: '923056499820@s.whatsapp.net', admin: 'admin' },
+            { id: '923999999999@s.whatsapp.net', admin: 'admin' }
+          ]
+        }),
+        groupSettingUpdate: async () => true
+      },
+      msg: { key: {} },
+      from: '120363159007450337@g.us',
+      sender: '923056499820@s.whatsapp.net',
+      isGroup: true,
+      isOwner: true
+    });
+
+    assert.strictEqual(dispatchedContent?.mentions, undefined, 'Mute must not have mentions array');
+    assert.ok(!dispatchedContent?.text?.includes('@923056499820'), 'Mute text must not contain clickable @mention');
+  });
+
   console.log(`\n=========================================`);
   console.log(`Test Results: ${passedTests} / ${totalTests} passed`);
   console.log(`=========================================\n`);

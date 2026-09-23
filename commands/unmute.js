@@ -68,13 +68,12 @@ module.exports = {
 🔓 *GROUP UNMUTED*
 All participants can now send messages.
 
-👤 *Action by:* @${senderClean}
+👤 *Action by:* Admin (${senderClean})
 `.trim();
 
       const output = miniBox('GROUP SETTINGS', body, 'MINI BOT');
       return safety.safeSend(sock, from, {
-        text: output,
-        mentions: [sender]
+        text: output
       });
 
     } catch (err) {
