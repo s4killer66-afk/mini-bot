@@ -3,6 +3,7 @@
  * Commands: .anime <name> [episode]
  * Features:
  * - Direct search on AniKoto (https://anikoto.cz) and Anichi (https://anichi.to)
+ * - In-WhatsApp playable video player (plays inside chat with WhatsApp controls)
  * - Episode selector (e.g. .anime solo leveling 3)
  * - English Sub & English Dub status
  * - Instant stream player with full controls (play/pause, fullscreen, server switcher)
@@ -11,6 +12,8 @@
 
 const { miniBox } = require('../lib/utils');
 const safety = require('../lib/safety');
+
+const TMDB_API_KEY = '15d2ea6d0dc1d476efbca3eba2b9bbfb';
 
 /**
  * Search AniKoto for anime results
@@ -54,6 +57,36 @@ async function searchAniKoto(query) {
 }
 
 /**
+ * Fetch anime trailer / video link from TMDB
+ */
+async function getAnimeTrailer(query) {
+  try {
+    const sUrl = `https://api.themoviedb.org/3/search/tv?query=${encodeURIComponent(query)}&api_key=${TMDB_API_KEY}&language=en-US`;
+    const sRes = await fetch(sUrl, { signal: AbortSignal.timeout(5000) });
+    if (!sRes.ok) return null;
+    const sData = await sRes.json();
+    const tvId = sData.results && sData.results[0] ? sData.results[0].id : null;
+    if (!tvId) return null;
+
+    const vUrl = `https://api.themoviedb.org/3/tv/${tvId}/videos?api_key=${TMDB_API_KEY}&language=en-US`;
+    const vRes = await fetch(vUrl, { signal: AbortSignal.timeout(5000) });
+    if (!vRes.ok) return null;
+    const vData = await vRes.json();
+    if (vData.results && vData.results.length > 0) {
+      const trailer = vData.results.find(v => v.type === 'Trailer' && v.site === 'YouTube') ||
+                      vData.results.find(v => v.site === 'YouTube') ||
+                      vData.results[0];
+      if (trailer && trailer.site === 'YouTube') {
+        return `https://youtu.be/${trailer.key}`;
+      }
+    }
+    return null;
+  } catch (e) {
+    return null;
+  }
+}
+
+/**
  * Fetch anime poster buffer
  */
 async function getPosterBuffer(url) {
@@ -74,7 +107,7 @@ async function getPosterBuffer(url) {
 module.exports = {
   name: 'anime',
   aliases: ['ani', 'animelist', 'watchanime', 'animes'],
-  description: 'Search anime and get instant streaming player with Sub/Dub and episode selection',
+  description: 'Search anime, watch in WhatsApp, and get instant episode streams with Sub/Dub',
   usage: '.anime <anime name> [episode number]',
 
   async execute({ sock, msg, from, sender, args }) {
@@ -117,6 +150,14 @@ module.exports = {
       const baseWatchUrl = anime.watchUrl.replace(/\/ep-\d+$/, '');
       const currentWatchUrl = `${baseWatchUrl}/ep-${targetEp}`;
 
+      // In-WhatsApp playable video trailer
+      const trailerUrl = await getAnimeTrailer(cleanQuery);
+      const whatsappPlayerSection = trailerUrl ? `
+▶️ *PLAY DIRECTLY IN WHATSAPP:*
+(Tap link to play inside WhatsApp with in-chat controls):
+👉 ${trailerUrl}
+` : '';
+
       // Audio / Sub / Dub status
       let audioStatus = '🇯🇵 Original Japanese (English Sub)';
       if (anime.dub > 0) {
@@ -139,7 +180,7 @@ module.exports = {
 🍙 *${anime.title.toUpperCase()}*
 📺 *Format:* ${anime.type} | Total: ${anime.total || anime.sub || 'Ongoing'} Episodes
 🔊 *Audio:* ${audioStatus}
-
+${whatsappPlayerSection}
 ==============================
 ▶️ *NOW PLAYING (EPISODE ${targetEp}):*
 Tap to play with Full Controls (Play/Pause, Fullscreen & Server Switch):

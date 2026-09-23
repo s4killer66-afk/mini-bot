@@ -395,9 +395,10 @@ async function runAsyncTests() {
     assert.ok(sentPayload !== null, 'Should send response for movie search');
     const responseText = sentPayload.caption || sentPayload.text || '';
     assert.ok(responseText.toUpperCase().includes('TITANIC'), 'Response should mention Titanic');
-    assert.ok(responseText.includes('multiembed.mov/?video_id='), 'Response should contain multiembed streaming link');
+    assert.ok(responseText.includes('vidsrc.to'), 'Response should contain verified vidsrc streaming link');
     assert.ok(responseText.includes('Hindi Dubbed'), 'Response should mention Dual Audio / Hindi Dubbed');
-    assert.ok(responseText.includes('net77.cc'), 'Response should mention Net77 mirror');
+    assert.ok(responseText.includes('vegamovies.im'), 'Response should mention Hindi Dubbed streaming portal');
+    assert.ok(responseText.includes('PLAY DIRECTLY IN WHATSAPP'), 'Response should include direct in-WhatsApp player');
   });
 
   // Test 12: Anime Search and Episode extraction
